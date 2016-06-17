@@ -8,11 +8,13 @@
 #define DISPLAY_HEIGHT_IN_CHARS 2
 #define TOP_ROW 0
 #define BOTTOM_ROW 1
-#define PORT_1_ROW
-#define PORT_2_ROW
-#define PORT_3_ROW
-#define PORT_4_ROW
+#define PORT_1_COLUMN 1
+#define PORT_2_COLUMN (PORT_1_COLUMN + COLUMN_SPACE)
+#define PORT_3_COLUMN (PORT_2_COLUMN + COLUMN_SPACE)
+#define PORT_4_COLUMN (PORT_3_COLUMN + COLUMN_SPACE)
 #define COLUMN_SPACE 4
+#define MIN_CHANNEL 1
+#define MAX_CHANNEL 16
 
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
@@ -42,6 +44,7 @@ byte rightDown[8] = {
 int column = 1;
 bool button_flag = true;
 bool button_value = true;
+int counter = 0;
 
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -74,10 +77,39 @@ void eraseCursor() {
   lcd.print(SPACER);              // erase the cursor
 }
 
+void incrementPort(int port_number) {
+  int col = 0;
+  switch (port_number) {
+    case 1:
+      col = PORT_1_COLUMN;
+      break;
+    case 2:
+      col = PORT_2_COLUMN;
+      break;
+    case 3:
+      col = PORT_3_COLUMN;
+      break;
+    default:
+      col = PORT_4_COLUMN;
+      break;
+    }
+    
+    lcd.setCursor(col, BOTTOM_ROW);
+    if (counter > MAX_CHANNEL) {
+      eraseCursor();
+      lcd.setCursor(col, BOTTOM_ROW);
+      counter = MIN_CHANNEL;
+    }
+    
+    lcd.print(counter);
+      
+}
+
 void loop() {
   button_value = digitalReadDebounced(BUTTON_PIN);
   
   if (!button_value && !button_flag) {
+    counter++;
     button_flag = true;             // set the button flag to only change the cursor once per press
     lcd.setCursor(column, TOP_ROW);
     eraseCursor();
@@ -92,7 +124,13 @@ void loop() {
   else if (button_value) {
     button_flag = false;
   }
-  lcd.setCursor(0, BOTTOM_ROW);
-  lcd.print(millis() / 1000);
+  
+  // incrementPort(1);
+  // incrementPort(2);
+  incrementPort(3);
+  // incrementPort(4);
+
 }
+
+
 
