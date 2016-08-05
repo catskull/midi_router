@@ -1,4 +1,23 @@
+// Could possibly use classes/structures to encapsulate certain properties
+// cursor, column, row, screen, etc.
+
 #include <LiquidCrystal.h>
+
+//Function prototypes
+void setup();
+void loop();
+void selectMode();
+void setMode(int);
+void cycleCursor();
+void changeChannel();
+void checkTimeout();
+bool digitalReadDebounced(int);
+void drawCursor();
+void eraseCursor();
+void incrementPort(int, int);
+void updateTime();
+void clearScreen();
+
 
 #define SPACER "  "
 #define BUTTON_PIN 7
@@ -46,13 +65,15 @@ byte rightDown[8] = {
 };
 
 int column = 1;
+//******************************//
+// What is the difference between button flag and value?
 bool button_flag = true;
 bool button_value = true;
+//******************************//
 int counter = 0;
 int mapped = 0;
 int oldVal = 0;
 int mode = MODE_VOID;
-int tempMode = MODE_VOID;
 unsigned long time;
 
 void setup() {
@@ -64,74 +85,77 @@ void setup() {
   lcd.noAutoscroll();
   lcd.write(LEFT_HALF_CURSOR);
   lcd.write(RIGHT_HALF_CURSOR);
-  mapped = map(analogRead(0), 0, 1015, 1, 16);
-  oldVal = mapped;
-  
-  // for (int i = 1; i < 5; i++) {
-  //   incrementPort(i, 1);
-  // }
-  
+  oldVal = map(analogRead(0), 0, 1015, 1, 16);
+
   Serial.begin(9600);
 }
 
-bool digitalReadDebounced(int pin) {
-  if (digitalRead(pin)) {
-    delay(5);
-    if (digitalRead(pin)) {
-      return true;
-    }
+void loop() {
+  // why are there only two of four modes here?
+  if (mode == MODE_VOID) {
+    selectMode();
   }
-  return false;
+  else if (mode == MODE_CHANNEL) {
+    cycleCursor();
+    changeChannel();
+    checkTimeout();
+  }
 }
 
-void drawCursor() {
-  lcd.write(LEFT_HALF_CURSOR);    // display the cursor
-  lcd.write(RIGHT_HALF_CURSOR);
-}
-
-void eraseCursor() {
-  lcd.print(SPACER);              // erase the cursor
-}
-
-void incrementPort(int port_number, int value) {
-  int col = 0;
-  switch (port_number) {
-    case 1:
-      col = PORT_1_COLUMN;
-      break;
-    case 2:
-      col = PORT_2_COLUMN;
-      break;
-    case 3:
-      col = PORT_3_COLUMN;
-      break;
-    default:
-      col = PORT_4_COLUMN;
-      break;
+void selectMode() {
+  int tempMode = 0;
+  mapped = map(analogRead(0), 0, 1015, 0, 2);
+  if (mapped != oldVal) {
+    lcd.setCursor(0,0);
+    lcd.print("               ");
+    switch (mapped) {
+      case 0:
+        tempMode = MODE_CHANNEL;
+        lcd.setCursor(0,0);
+        lcd.print("Channel");
+        break;
+      case 1:
+        tempMode = MODE_VOLUME;
+        lcd.setCursor(0,0);
+        lcd.print("Volume");
+        break;
+      case 2:
+        tempMode = MODE_PITCH;
+        lcd.setCursor(0,0);
+        lcd.print("Pitch Offset");
+        break;
     }
-    
-    lcd.setCursor(col, BOTTOM_ROW);
-    eraseCursor();
-    lcd.setCursor(col, BOTTOM_ROW);
+    oldVal = mapped;
+  }
+  setMode(tempMode);
+}
 
-    if (value) {
-      lcd.print(value);
-    }
+void setMode(int tempMode) {
+  button_value = digitalReadDebounced(BUTTON_PIN);
+
+  if (!button_value && !button_flag) {
+    mapped = oldVal;
+    clearScreen();
+    mode = tempMode;
+  }
+  else if (button_value) {
+    button_flag = false;
+  }
 }
 
 void cycleCursor() {
   button_value = digitalReadDebounced(BUTTON_PIN);
-  
+
   if (!button_value && !button_flag) {
     updateTime();
     counter++;
-    button_flag = true;             // set the button flag to only change the cursor once per press
+    button_flag = true;                       // set the button flag to only change the cursor once per press
     lcd.setCursor(column, TOP_ROW);
     eraseCursor();
-    column += COLUMN_SPACE;                    // jump to the next space for the cursor
-    if (column >= DISPLAY_WIDTH_IN_CHARS) {             // if the cursor is as far right as it can be
+    column += COLUMN_SPACE;                   // jump to the next space for the cursor
+    if (column >= DISPLAY_WIDTH_IN_CHARS) {   // if the cursor is as far right as it can be
       eraseCursor();
-      column = 1;                   // reset the column to the first position
+      column = 1;                             // reset the column to the first position
     }
     lcd.setCursor(column, TOP_ROW);
     drawCursor();
@@ -161,36 +185,6 @@ void changeChannel() {
   oldVal = mapped;
 }
 
-void selectMode() {
-  mapped = map(analogRead(0), 0, 1015, 0, 2);
-  if (mapped != oldVal) {
-    lcd.setCursor(0,0);
-    lcd.print("               ");
-    switch (mapped) {
-      case 0:
-        tempMode = MODE_CHANNEL;
-        lcd.setCursor(0,0);
-        lcd.print("Channel");
-        break;
-      case 1:
-        tempMode = MODE_VOLUME;
-        lcd.setCursor(0,0);
-        lcd.print("Volume");
-        break;
-      case 2:
-        tempMode = MODE_PITCH;
-        lcd.setCursor(0,0);
-        lcd.print("Pitch Offset");
-        break;
-    }
-  }
-  oldVal = mapped;
-}
-
-void updateTime() {
-  time = millis();
-}
-
 void checkTimeout() {
   if ((millis() - time) > 2000) {
     clearScreen();
@@ -198,17 +192,53 @@ void checkTimeout() {
   }
 }
 
-void setMode() {
-  button_value = digitalReadDebounced(BUTTON_PIN);
-  
-  if (!button_value && !button_flag) {
-    mapped = oldVal;
-    clearScreen();
-    mode = tempMode;
+bool digitalReadDebounced(int pin) {
+  if (digitalRead(pin)) {
+    delay(5);
+    if (digitalRead(pin)) {
+      return true;
+    }
   }
-  else if (button_value) {
-    button_flag = false;
-  }
+  return false;
+}
+
+void drawCursor() {
+  lcd.write(LEFT_HALF_CURSOR);
+  lcd.write(RIGHT_HALF_CURSOR);
+}
+
+void eraseCursor() {
+  lcd.print(SPACER);
+}
+
+void incrementPort(int port_number, int value) {
+  int col = 0;
+  switch (port_number) {
+    case 1:
+      col = PORT_1_COLUMN;
+      break;
+    case 2:
+      col = PORT_2_COLUMN;
+      break;
+    case 3:
+      col = PORT_3_COLUMN;
+      break;
+    default:
+      col = PORT_4_COLUMN;
+      break;
+    }
+
+    lcd.setCursor(col, BOTTOM_ROW);
+    eraseCursor();
+    lcd.setCursor(col, BOTTOM_ROW);
+
+    if (value) {
+      lcd.print(value);
+    }
+}
+
+void updateTime() {
+  time = millis();
 }
 
 void clearScreen() {
@@ -217,20 +247,3 @@ void clearScreen() {
   lcd.setCursor(0,1);
   lcd.print("                ");
 }
-
-void loop() {
-  if (mode == MODE_VOID) {
-    selectMode();
-    setMode();
-  }
-  else if (mode == MODE_CHANNEL) {
-    cycleCursor();
-    changeChannel();
-    checkTimeout();
-  }
-}
-
-
-
-
-
