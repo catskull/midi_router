@@ -2,12 +2,14 @@
 // cursor, column, row, screen, etc.
 
 #include <LiquidCrystal.h>
+#include <EEPROM.h>
 
 //Function prototypes
 void setup();
 void loop();
 void selectMode();
 void setMode(int);
+void modeSetChannel();
 void cycleCursor();
 void changeChannel();
 void checkTimeout();
@@ -76,6 +78,9 @@ int oldVal = 0;
 int mode = MODE_VOID;
 unsigned long time;
 
+// store the midi channel offsets in eprom
+// byte channelOffset[] PROGMEM = {0, 0, 0, 0};
+
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   lcd.createChar(0, leftDown);
@@ -91,20 +96,22 @@ void setup() {
 }
 
 void loop() {
-  // why are there only two of four modes here?
-  if (mode == MODE_VOID) {
-    selectMode();
-  }
-  else if (mode == MODE_CHANNEL) {
-    cycleCursor();
-    changeChannel();
-    checkTimeout();
+  switch (mode) {
+    case MODE_VOID:
+      selectMode();
+      break;
+    case MODE_CHANNEL:
+      modeSetChannel();
+      break;
+      
+    default:
+      selectMode();
   }
 }
 
 void selectMode() {
   int tempMode = 0;
-  mapped = map(analogRead(0), 0, 1015, 0, 2);
+  mapped = map(analogRead(0), 0, 1000, 0, 2);
   if (mapped != oldVal) {
     lcd.setCursor(0,0);
     lcd.print("               ");
@@ -140,6 +147,25 @@ void setMode(int tempMode) {
   }
   else if (button_value) {
     button_flag = false;
+  }
+}
+
+void modeSetChannel() {
+  modeSetChannelSetup();
+  while (mode == MODE_CHANNEL) {
+    cycleCursor();
+    changeChannel();
+    checkTimeout();
+  }
+}
+
+void modeSetChannelSetup() {
+  // read the value of the pot so we don't immediately overwrite the channel
+  // I probably should use a rotary encoder instead of a pot.
+  mapped = map(analogRead(0), 0, 1015, 0, 16);
+  oldVal = mapped;
+  for (int i = 0; i < 4; i++) {
+    incrementPort(i+1, EEPROM.read(i));
   }
 }
 
@@ -189,6 +215,7 @@ void checkTimeout() {
   if ((millis() - time) > 2000) {
     clearScreen();
     mode = MODE_VOID;
+    column = 0;
   }
 }
 
@@ -213,18 +240,23 @@ void eraseCursor() {
 
 void incrementPort(int port_number, int value) {
   int col = 0;
+  int index = 0;
   switch (port_number) {
     case 1:
       col = PORT_1_COLUMN;
+      index = 0;
       break;
     case 2:
       col = PORT_2_COLUMN;
+      index = 1;
       break;
     case 3:
       col = PORT_3_COLUMN;
+      index = 2;
       break;
     default:
       col = PORT_4_COLUMN;
+      index = 3;
       break;
     }
 
@@ -234,6 +266,7 @@ void incrementPort(int port_number, int value) {
 
     if (value) {
       lcd.print(value);
+      EEPROM.write(0 + index, value);
     }
 }
 
