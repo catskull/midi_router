@@ -93,21 +93,23 @@ void setup() {
   // lcd.write(RIGHT_HALF_CURSOR);
   oldVal = map(analogRead(0), 0, 1015, 1, 16);
 
-  Serial.begin(31250);
+  Serial.begin(9600);
+  lcd.setCursor(0,0);
+  lcd.print("waiting...");
 }
 
 void loop() {
   incomingMIDI = Serial.read();
-  lcd.setCursor(0,0);
-  lcd.print("waiting...");
   if (incomingMIDI >= 0) {
     clearScreen();
     lcd.setCursor(0,0);
     lcd.print(incomingMIDI);
     digitalWrite(13, HIGH);
-    delay(100);
+    delay(1000);
     digitalWrite(13, LOW);
-    delay(10);
+    delay(1000);
+    lcd.setCursor(0,0);
+    lcd.print("waiting...");
   }
   // switch (mode) {
   //   case MODE_VOID:
