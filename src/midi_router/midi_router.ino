@@ -38,7 +38,7 @@ void clearScreen();
 #define MIN_CHANNEL 1
 #define MAX_CHANNEL 16
 #define MODE_CHANNEL 0
-#define MODE_VOLUME 1
+#define MODE_VELOCITY 1
 #define MODE_PITCH 2
 #define MODE_VOID -1
 
@@ -136,6 +136,9 @@ void loop() {
     case MODE_CHANNEL:
       modeSetChannel();
       break;
+    case MODE_VELOCITY:
+      modeSetVelocity();
+      break;
       
     default:
       selectMode();
@@ -146,7 +149,6 @@ void selectMode() {
   int tempMode = 0;
   mapped = map(analogRead(0), 0, 1000, 0, 2);
   if (mapped != oldVal) {
-    lcd.setCursor(0,0);
     clearScreen();
     switch (mapped) {
       case 0:
@@ -155,9 +157,9 @@ void selectMode() {
         lcd.print("Channel");
         break;
       case 1:
-        tempMode = MODE_VOLUME;
+        tempMode = MODE_VELOCITY;
         lcd.setCursor(0,0);
-        lcd.print("Volume");
+        lcd.print("Velocity");
         break;
       case 2:
         tempMode = MODE_PITCH;
@@ -183,29 +185,6 @@ void setMode(int tempMode) {
   }
 }
 
-void modeSetChannel() {
-  modeSetChannelSetup();
-  while (mode == MODE_CHANNEL) {
-    cycleCursor();
-    changeChannel();
-    checkTimeout();
-  }
-}
-
-void modeSetChannelSetup() {
-  // read the value of the pot so we don't immediately overwrite the channel
-  // I probably should use a rotary encoder instead of a pot.
-  mapped = map(analogRead(0), 0, 1015, 0, 16);
-  oldVal = mapped;
-  column = -3;
-  for (int i = 0; i < 4; i++) {
-    // TODO: Clear the eeprom data on firt boot somehow
-    if(EEPROM.read(i) > -1) {
-      incrementPort(i+1, EEPROM.read(i));
-    }
-  }
-}
-
 void cycleCursor() {
   button_value = digitalReadDebounced(BUTTON_PIN);
 
@@ -226,26 +205,6 @@ void cycleCursor() {
   else if (button_value) {
     button_flag = false;
   }
-}
-
-void changeChannel() {
-  mapped = map(analogRead(0), 0, 1015, 0, 16);
-  if (mapped != oldVal) {
-    updateTime();
-    if (column == PORT_1_COLUMN){
-      incrementPort(1, mapped);
-    }
-    else if (column == PORT_2_COLUMN) {
-      incrementPort(2, mapped);
-    }
-    else if (column == PORT_3_COLUMN) {
-      incrementPort(3, mapped);
-    }
-    else if (column == PORT_4_COLUMN) {
-      incrementPort(4, mapped);
-    }
-  }
-  oldVal = mapped;
 }
 
 void checkTimeout() {
@@ -275,6 +234,60 @@ void drawCursor() {
 
 void eraseCursor() {
   lcd.print(SPACER);
+}
+
+void updateTime() {
+  time = millis();
+}
+
+void clearScreen() {
+  lcd.setCursor(0,0);
+  lcd.print("                ");
+  lcd.setCursor(0,1);
+  lcd.print("                ");
+}
+
+void modeSetChannel() {
+  modeSetChannelSetup();
+  while (mode == MODE_CHANNEL) {
+    cycleCursor();
+    changeChannel();
+    checkTimeout();
+  }
+}
+
+void modeSetChannelSetup() {
+  // read the value of the pot so we don't immediately overwrite the channel
+  // I probably should use a rotary encoder instead of a pot.
+  mapped = map(analogRead(0), 0, 1015, 0, 16);
+  oldVal = mapped;
+  column = -3;
+  for (int i = 0; i < 4; i++) {
+    // TODO: Clear the eeprom data on firt boot somehow
+    if(EEPROM.read(i) > -1) {
+      incrementPort(i+1, EEPROM.read(i));
+    }
+  }
+}
+
+void changeChannel() {
+  mapped = map(analogRead(0), 0, 1015, 0, 16);
+  if (mapped != oldVal) {
+    updateTime();
+    if (column == PORT_1_COLUMN){
+      incrementPort(1, mapped);
+    }
+    else if (column == PORT_2_COLUMN) {
+      incrementPort(2, mapped);
+    }
+    else if (column == PORT_3_COLUMN) {
+      incrementPort(3, mapped);
+    }
+    else if (column == PORT_4_COLUMN) {
+      incrementPort(4, mapped);
+    }
+  }
+  oldVal = mapped;
 }
 
 void incrementPort(int port_number, int value) {
@@ -312,13 +325,76 @@ void incrementPort(int port_number, int value) {
     EEPROM.write(0 + index, value);
 }
 
-void updateTime() {
-  time = millis();
+void modeSetVelocity() {
+  digitalWrite(13, HIGH);
+  modeSetVelocitySetup();
+  while (mode == MODE_VELOCITY) {
+    cycleCursor();
+    changeVelocity();
+    checkTimeout();
+  }
 }
 
-void clearScreen() {
-  lcd.setCursor(0,0);
-  lcd.print("                ");
-  lcd.setCursor(0,1);
-  lcd.print("                ");
+void modeSetVelocitySetup() {
+  // read the value of the pot so we don't immediately overwrite the channel
+  // I probably should use a rotary encoder instead of a pot.
+  mapped = map(analogRead(0), 0, 1015, 0, 127);
+  oldVal = mapped;
+  column = -3;
+  for (int i = 0; i < 4; i++) {
+    // TODO: Clear the eeprom data on firt boot somehow
+    if(EEPROM.read(i+4) > -1) {
+      incrementVelocity(i+1, EEPROM.read(i+4));
+    }
+  }
+}
+
+void changeVelocity() {
+  mapped = map(analogRead(0), 0, 1015, 0, 127);
+  if (mapped != oldVal) {
+    updateTime();
+    if (column == PORT_1_COLUMN){
+      incrementVelocity(1, mapped);
+    }
+    else if (column == PORT_2_COLUMN) {
+      incrementVelocity(2, mapped);
+    }
+    else if (column == PORT_3_COLUMN) {
+      incrementVelocity(3, mapped);
+    }
+    else if (column == PORT_4_COLUMN) {
+      incrementVelocity(4, mapped);
+    }
+  }
+  oldVal = mapped;
+}
+
+void incrementVelocity(int port_number, int value) {
+  int col = 0;
+  int index = 0;
+  switch (port_number) {
+    case 1:
+      col = PORT_1_COLUMN;
+      index = 0;
+      break;
+    case 2:
+      col = PORT_2_COLUMN;
+      index = 1;
+      break;
+    case 3:
+      col = PORT_3_COLUMN;
+      index = 2;
+      break;
+    default:
+      col = PORT_4_COLUMN;
+      index = 3;
+      break;
+    }
+
+    lcd.setCursor(col, BOTTOM_ROW);
+    eraseCursor();
+    lcd.setCursor(col, BOTTOM_ROW);
+
+    lcd.print(value);
+    EEPROM.write(4 + index, value);
 }
