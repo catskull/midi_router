@@ -104,7 +104,7 @@ void setup() {
   lcd.noAutoscroll();
   oldVal = map(analogRead(0), 0, 1015, 1, 16);
 
-  Serial.begin(31250);
+  Serial.begin(9600);
   lcd.setCursor(0,0);
   lcd.print("MIDI Router 0.1");
   lcd.setCursor(0,1);
@@ -116,29 +116,30 @@ void setup() {
 }
 
 void loop() {
-  incomingMIDI = Serial.read();
-  lcd.setCursor(0,0);
-  lcd.print("waiting...");
-  if (incomingMIDI >= 0) {
-    clearScreen();
-    lcd.setCursor(0,0);
-    lcd.print(incomingMIDI);
-    digitalWrite(13, HIGH);
-    delay(100);
-    digitalWrite(13, LOW);
-    delay(10);
-  }
-  // switch (mode) {
-  //   case MODE_VOID:
-  //     selectMode();
-  //     break;
-  //   case MODE_CHANNEL:
-  //     modeSetChannel();
-  //     break;
-  //     
-  //   default:
-  //     selectMode();
+  // Serial debug code
+  // incomingMIDI = Serial.read();
+  // if (incomingMIDI >= 0) {
+  //   clearScreen();
+  //   lcd.setCursor(0,0);
+  //   lcd.print(incomingMIDI);
+  //   digitalWrite(13, HIGH);
+  //   delay(100);
+  //   digitalWrite(13, LOW);
+  //   delay(100);
+  //   lcd.setCursor(0,0);
+  //   lcd.print("waiting...");
   // }
+  switch (mode) {
+    case MODE_VOID:
+      selectMode();
+      break;
+    case MODE_CHANNEL:
+      modeSetChannel();
+      break;
+      
+    default:
+      selectMode();
+  }
 }
 
 void selectMode() {
