@@ -102,8 +102,6 @@ void setup() {
   lcd.begin(DISPLAY_WIDTH_IN_CHARS, DISPLAY_HEIGHT_IN_CHARS);
   lcd.setCursor(column, TOP_ROW);
   lcd.noAutoscroll();
-  // lcd.write(LEFT_HALF_CURSOR);
-  // lcd.write(RIGHT_HALF_CURSOR);
   oldVal = map(analogRead(0), 0, 1015, 1, 16);
 
   Serial.begin(31250);
