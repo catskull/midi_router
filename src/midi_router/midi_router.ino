@@ -25,6 +25,7 @@ void clearScreen();
 #define BUTTON_PIN 4
 #define LEFT_HALF_CURSOR (uint8_t)0
 #define RIGHT_HALF_CURSOR (uint8_t)1
+#define CATSKULL_ICON (uint8_t)2
 #define DISPLAY_WIDTH_IN_CHARS 16
 #define DISPLAY_HEIGHT_IN_CHARS 2
 #define TOP_ROW 0
@@ -66,6 +67,17 @@ byte rightDown[8] = {
 	0b10000
 };
 
+byte catskull[8] = {
+	0b10001,
+	0b11011,
+	0b11111,
+	0b10001,
+	0b11011,
+	0b10001,
+	0b10101,
+	0b01110
+};
+
 int column = 1;
 //******************************//
 // What is the difference between button flag and value?
@@ -86,6 +98,7 @@ void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   lcd.createChar(0, leftDown);
   lcd.createChar(1, rightDown);
+  lcd.createChar(2, catskull);
   lcd.begin(DISPLAY_WIDTH_IN_CHARS, DISPLAY_HEIGHT_IN_CHARS);
   lcd.setCursor(column, TOP_ROW);
   lcd.noAutoscroll();
