@@ -105,6 +105,14 @@ void setup() {
   oldVal = map(analogRead(0), 0, 1015, 1, 16);
 
   Serial.begin(31250);
+  lcd.setCursor(0,0);
+  lcd.print("MIDI Router 0.1");
+  lcd.setCursor(0,1);
+  lcd.print("CATSKULL.NET");
+  lcd.setCursor(13,1);
+  lcd.write(CATSKULL_ICON);
+  
+  delay(5000);
 }
 
 void loop() {
